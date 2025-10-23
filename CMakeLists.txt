@@ -31,17 +31,17 @@ include_directories(
 
 # Source files in the main src folder
 set(SOURCES
-    src/ackermann_ekf.cpp
+    src/localization.cpp
     src/config_parser.cpp
     src/ros_sensor.cpp
     src/std_ros_sensors.cpp
 )
 
 # Declare the executable
-add_executable(ackermann_ekf ${SOURCES})
+add_executable(localization ${SOURCES})
 
 # Link libraries
-ament_target_dependencies(ackermann_ekf
+ament_target_dependencies(localization
     rclcpp
     sensor_msgs
     geometry_msgs
@@ -53,10 +53,10 @@ ament_target_dependencies(ackermann_ekf
     Eigen3
 )
 
-target_link_libraries(ackermann_ekf cev_kalman_filter yaml-cpp)
+target_link_libraries(localization cev_kalman_filter yaml-cpp)
 
 # Install targets
-install(TARGETS ackermann_ekf
+install(TARGETS localization
     DESTINATION lib/${PROJECT_NAME})
 
 # Install additional resources

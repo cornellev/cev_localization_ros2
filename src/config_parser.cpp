@@ -2,136 +2,90 @@
 
 using namespace cev_localization::config_parser;
 
-Config ConfigParser::loadConfig(const std::string& filePath) {
-    YAML::Node configNode = YAML::LoadFile(filePath);
+Sensor Sensor::loadSensor(const YAML::Node& sensorNode) {
+    if (!sensorNode["type"] || !sensorNode["topic"]) {
+        throw std::runtime_error("Sensor type and topic must be defined");
+    }
 
+    Sensor sensor;
+    sensor.type = sensorNode["type"].as<std::string>();
+    sensor.topic = sensorNode["topic"].as<std::string>();
+    sensor.frame_id = sensorNode["frame_id"]
+                          ? std::make_optional(sensorNode["frame_id"].as<std::string>())
+                          : std::nullopt;
+    sensor.state_mask = sensorNode["state"] ? sensorNode["state"].as<std::vector<std::string>>()
+                                            : std::vector<std::string>{};
+    sensor.covariance_multiplier = sensorNode["covariance_multiplier"].as<double>(1.0);
+    sensor.use_message_covariance = sensorNode["use_message_covariance"].as<bool>(true);
+    sensor.estimator_models = sensorNode["estimator_models"]
+                                  ? sensorNode["estimator_models"].as<std::vector<std::string>>()
+                                  : std::vector<std::string>{};
+
+    return sensor;
+}
+
+Publish Publish::loadPublish(const YAML::Node& publishNode) {
+    Publish publish;
+
+    if (!publishNode["active"]) {
+        return publish;
+    }
+
+    publish.active = publishNode["active"].as<bool>();
+
+    if (!publishNode["topic"] || !publishNode["child_frame"] || !publishNode["parent_frame"]) {
+        throw std::runtime_error("Publish topic and frames must be defined");
+    }
+
+    publish.topic = publishNode["topic"].as<std::string>();
+    publish.rate = publishNode["rate"].as<int>(100);
+    publish.child_frame = publishNode["child_frame"].as<std::string>("");
+    publish.parent_frame = publishNode["parent_frame"].as<std::string>("");
+
+    publish.publish_tf = publishNode["publish_tf"].as<bool>(false);
+
+    return publish;
+}
+
+UpdateModel UpdateModel::loadUpdateModel(const YAML::Node& modelNode) {
+    if (!modelNode["type"] || !modelNode["state"]) {
+        throw std::runtime_error("Model type must be defined");
+    }
+
+    UpdateModel model;
+    model.type = modelNode["type"].as<std::string>();
+    model.state_mask = modelNode["state"].as<std::vector<std::string>>();
+    model.estimator_models = modelNode["estimator_models"]
+                                 ? modelNode["estimator_models"].as<std::vector<std::string>>()
+                                 : std::vector<std::string>{};
+
+    if (!modelNode["publish"]) {
+        return model;
+    }
+
+    model.publish = Publish::loadPublish(modelNode["publish"]);
+
+    return model;
+}
+
+Config Config::loadConfig(const YAML::Node& configNode) {
     Config config;
 
-    // Publish rate
-    try {
-        double rate = configNode["odometry_settings"]["publish_rate"].as<double>();
-        if (rate <= 0) {
-            throw std::runtime_error(
-                "Parameter `odometry_settings/publish_rate` must be greater than 0");
-        }
-        config.time_step = 1.0 / rate;
-    } catch (YAML::Exception& e) {
-        config.time_step = 0.01;
-    }
-
-    // Odometry settings
-    try {
-        config.base_link_frame =
-            configNode["odometry_settings"]["base_link_frame"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        config.base_link_frame = "base_link";
-    }
-
-    try {
-        config.odom_frame = configNode["odometry_settings"]["odom_frame"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        config.odom_frame = "odom";
-    }
-
-    try {
-        config.odometry_topic = configNode["odometry_settings"]["topic"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        config.odometry_topic = "odom";
-    }
-
-    // Main model
-    try {
-        config.main_model = configNode["odometry_settings"]["main_model"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        throw std::runtime_error("Parameter `odometry_settings/main_model` not defined");
-    }
-
-    // Publish tf
-    try {
-        config.publish_tf = configNode["odometry_settings"]["publish_tf"].as<bool>();
-    } catch (YAML::Exception& e) {
-        config.publish_tf = true;
-    }
-
-    // Parse sensors
     for (const auto& sensorEntry: configNode["sensors"]) {
         const std::string sensorName = sensorEntry.first.as<std::string>();
-        config.sensors[sensorName] = parseSensor(sensorEntry.second);
+        config.sensors[sensorName] = Sensor::loadSensor(sensorEntry.second);
     }
 
-    // Parse update models
     for (const auto& modelEntry: configNode["update_models"]) {
         const std::string modelName = modelEntry.first.as<std::string>();
-        config.update_models[modelName] = parseUpdateModel(modelEntry.second);
+        config.update_models[modelName] = UpdateModel::loadUpdateModel(modelEntry.second);
     }
 
     return config;
 }
 
-cev_localization::config_parser::Sensor ConfigParser::parseSensor(const YAML::Node& sensorNode) {
-    Sensor sensor;
-    try {
-        sensor.type = sensorNode["type"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        throw std::runtime_error("Sensor type not defined");
-    }
+Config ConfigParser::load(const std::string& filePath) {
+    YAML::Node configNode = YAML::LoadFile(filePath);
 
-    try {
-        sensor.topic = sensorNode["topic"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        throw std::runtime_error("Sensor topic not defined");
-    }
-
-    try {
-        sensor.frame_id = sensorNode["frame_id"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        sensor.frame_id = std::nullopt;
-    }
-
-    // Parse state mask
-    for (const auto& val: sensorNode["state"]) {
-        sensor.state_mask.push_back(val.as<std::string>());
-    }
-
-    // Parse covariance_multiplier
-    try {
-        sensor.covariance_multiplier = sensorNode["covariance_multiplier"].as<double>();
-    } catch (YAML::Exception& e) {
-        sensor.covariance_multiplier = 1.0;
-    }
-
-    try {
-        sensor.use_message_covariance = sensorNode["use_message_covariance"].as<bool>();
-    } catch (YAML::Exception& e) {
-        sensor.use_message_covariance = true;
-    }
-
-    // Parse estimator_models
-    for (const auto& model: sensorNode["estimator_models"]) {
-        sensor.estimator_models.push_back(model.as<std::string>());
-    }
-
-    return sensor;
-}
-
-UpdateModel ConfigParser::parseUpdateModel(const YAML::Node& modelNode) {
-    UpdateModel model;
-
-    try {
-        model.type = modelNode["type"].as<std::string>();
-    } catch (YAML::Exception& e) {
-        throw std::runtime_error("Model type not defined");
-    }
-
-    // Parse state mask
-    for (const auto& val: modelNode["state"]) {
-        model.state_mask.push_back(val.as<std::string>());
-    }
-
-    // Parse estimator_models
-    for (const auto& mod: modelNode["estimator_models"]) {
-        model.estimator_models.push_back(mod.as<std::string>());
-    }
-
-    return model;
+    return Config::loadConfig(configNode);
 }

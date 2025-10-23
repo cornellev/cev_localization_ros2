@@ -67,7 +67,7 @@ def generate_launch_description():
             ),
             Node(
                 package="cev_localization",
-                executable="ackermann_ekf",
+                executable="localization",
                 name="cev_localization_node",
                 output="screen",
                 parameters=[

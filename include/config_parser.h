@@ -19,40 +19,45 @@ namespace cev_localization {
             double covariance_multiplier;
             bool use_message_covariance;
             std::vector<std::string> estimator_models;
+
+            static Sensor loadSensor(const YAML::Node& sensorNode);
+        };
+
+        struct Publish {
+            bool active = false;
+            std::string topic = "";
+            int rate = 100;
+            std::string child_frame = "";
+            std::string parent_frame = "";
+
+            bool publish_tf = false;
+
+            static Publish loadPublish(const YAML::Node& publishNode);
         };
 
         struct UpdateModel {
             std::string type;
             std::vector<std::string> state_mask;
             std::vector<std::string> estimator_models;
+
+            Publish publish;
+
+            static UpdateModel loadUpdateModel(const YAML::Node& modelNode);
         };
 
         struct Config {
-            // General settings
-            double time_step;  // seconds
-
-            std::string main_model;
-
-            // Odometry settings
-            std::string odometry_topic;
-            std::string base_link_frame;
-            std::string odom_frame;
-            bool publish_tf;
-
             // Sensors
             std::unordered_map<std::string, Sensor> sensors;
 
             // Update Models
             std::unordered_map<std::string, UpdateModel> update_models;
+
+            static Config loadConfig(const YAML::Node& configNode);
         };
 
         class ConfigParser {
         public:
-            static Config loadConfig(const std::string& filePath);
-
-        private:
-            static Sensor parseSensor(const YAML::Node& sensorNode);
-            static UpdateModel parseUpdateModel(const YAML::Node& modelNode);
+            static Config load(const std::string& filePath);
         };
     }
 }

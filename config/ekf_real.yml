@@ -1,15 +1,3 @@
-# General settings for the Kalman Filter node output
-odometry_settings:
-  publish_rate: 100 # Publish rate of the filter in Hz
-
-  main_model: "ackermann" # Main model to use for the filter
-
-  topic: "/odometry/meow" # Topic to publish the odometry data
-  base_link: "base_link" # Base link frame ID
-  odom_frame: "odom" # Odometry frame ID
-
-  publish_tf: true # Publish TF data
-
 # Define the sensors used by the node
 sensors:
   witmotion_imu:
@@ -37,7 +25,26 @@ update_models:
     type: "ACKERMANN" # Model type (ACKERMANN, CARTESIAN, etc.)
     state: ["x", "y", "d_x", "d_y", "yaw", "tau"] # State variables to use from the model in updates
     estimator_models: []
+
+    publish:
+      active: true
+      topic: "/odometry/ackermann"
+      child_frame: "base_link"
+      parent_frame: "odom"
+      rate: 100
+
+      publish_tf: true
+
   cartesian:
     type: "CARTESIAN"
-    state: ["x", "y", "d_x", "d_y", "yaw", "d_yaw"] 
+    state: ["x", "y", "d_x", "d_y", "yaw", "d_yaw"]
     estimator_models: ["ackermann"]
+
+    publish:
+      active: false
+      topic: "/odometry/cartesian"
+      child_frame: "base_link"
+      parent_frame: "odom_cart"
+      rate: 200
+
+      publish_tf: false
