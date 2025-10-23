@@ -18,7 +18,7 @@ sensors:
     frame_id: "imu_frame" # Frame ID for the sensor data
     
     state: ["d2_x", "d2_y", "yaw"] # State variables to use from the sensor data
-    covariance_multiplier: 1.0 # Multiplier to multiply message covariance by
+    covariance_multiplier: 1.0 # Multiplier to multiply message covariance by (UNIMPLEMENTED)
     use_message_covariance: true
     estimator_models: ["ackermann", "cartesian"] # List of strings representing models to use for the sensor data by name
 
@@ -28,7 +28,7 @@ sensors:
     frame_id: "odom_frame"
 
     state: ["d_x", "tau"]
-    covariance_multiplier: 2.0
+    covariance_multiplier: 2.0 # UNIMPLEMENTED
     estimator_models: ["ackermann", "cartesian"]
 
 # Define update models with their parameters

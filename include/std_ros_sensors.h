@@ -16,10 +16,35 @@ namespace cev_localization {
 
         class IMUSensor : public RosSensor<sensor_msgs::msg::Imu> {
         private:
-            double pos_mod(double angle);
+            /**
+             * @brief Updates the linear acceleration of the state.
+             * @param msg The IMU message to update the state with.
+             * @param estimate The state to update.
+             */
+            void update_linear_acceleration(const sensor_msgs::msg::Imu::SharedPtr& msg,
+                StatePackage& estimate);
+            /**
+             * @brief Updates the orientation of the state.
+             * @param msg The IMU message to update the state with.
+             * @param estimate The state to update.
+             */
+            void update_orientation(const sensor_msgs::msg::Imu::SharedPtr& msg,
+                StatePackage& estimate);
+            /**
+             * @brief Helper to accumulate an angle measurement.
+             * @param raw_angle The raw angle measurement.
+             * @param last_raw_angle The last raw angle measurement.
+             * @param accumulated_angle The accumulated angle measurement.
+             * @return The new accumulated angle measurement.
+             */
+            double accumulate_angle(double raw_angle, double& last_raw_angle,
+                double& accumulated_angle);
 
         protected:
             bool initialized;
+            /**
+             * @brief Whether to report the orientation relative to the initial orientation.
+             */
             bool relative;
             double initial_yaw;
             double last_reported_yaw;
@@ -32,6 +57,11 @@ namespace cev_localization {
                 std::vector<std::string> state_mask = {"d2_x", "d2_y", "yaw"},
                 bool use_message_covariance = true, bool relative = true);
 
+            /**
+             * @brief Updates the state with new IMU sensor data.
+             * @param msg The IMU message to update the state with.
+             * @return The updated state.
+             */
             StatePackage msg_update(sensor_msgs::msg::Imu::SharedPtr msg);
         };
 
@@ -45,6 +75,11 @@ namespace cev_localization {
                 std::vector<std::string> state_mask = {"d_x", "tau"},
                 bool use_message_covariance = true);
 
+            /**
+             * @brief Updates the state with new raw sensor data.
+             * @param msg The raw sensor message to update the state with.
+             * @return The updated state.
+             */
             StatePackage msg_update(cev_msgs::msg::SensorCollect::SharedPtr msg);
         };
 
