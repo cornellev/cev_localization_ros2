@@ -54,4 +54,4 @@ This layer has the ROS nodes, parameters, config parsing, and sensor/model insta
 ### Node Entry Point
 | File | Purpose |
 |------|---------|
-| `src/ackermann_ekf.cpp` | The `LocalizationNode` class. It: <br>• Parses configuration parameters. <br>• Instantiates EKF models (`init_update_models`). <br>• Creates sensor adapters/subscriptions (`init_sensors`). <br>• Connects sensors to models via the configuration’s `estimator_models` bindings. <br>• Publishes the new odometry (`publish_odometry`) and optional TF transforms. |
+| `src/localization.cpp` | The `LocalizationNode` class. It: <br>• Parses configuration parameters. <br>• Instantiates EKF models (`init_update_models`). <br>• Creates sensor adapters/subscriptions (`init_sensors`). <br>• Connects sensors to models via the configuration’s `estimator_models` bindings. <br>• Publishes the new odometry (`publish_odometry`) and optional TF transforms. |
