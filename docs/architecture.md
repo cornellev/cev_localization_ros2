@@ -3,18 +3,18 @@
 This package is has:
 
 1. **`cev_localization_ros2/cev_kalman_filter`** – EKF library with the estimation logic, process and sensor models.
-2. **`cev/cev_localization_ros2`** – the ROS 2 integration layer to implement the EKF library into nodes.
+2. **`cev_localization_ros2`** – the ROS 2 integration layer to implement the EKF library into nodes.
 
 ---
 
-## EKF Core (`cev_kalman_filter`)
+## EKF (`cev_kalman_filter`)
 
-Handles the filter state management.
+Handles the kalman filter internals.
 
-### State and Base Types
+### Estimator
 | File | Purpose |
 |------|---------|
-| `include/estimator.h` | Defines the shared state layout (`ckf::state::*`), the `StatePackage`/`SimpleStatePackage`, and the `Estimator` base class with state `V`, covariance `M`, and timing. |
+| `include/estimator.h` | Defines the shared state layout (`ckf::state::*`), the `StatePackage`, and the `Estimator` with state `V`, covariance `M`, and timing. |
 | `src/estimator.cpp` | Implements getters/setters for above. |
 
 Every model or sensor in EKF inherits from `Estimator`.
@@ -40,13 +40,13 @@ For dependent models, `Model::bind_to` links a “parent” model to the depende
 
 This layer has the ROS nodes, parameters, config parsing, and sensor/model instantiation.
 
-### Configuration
+### Config
 | File | Purpose |
 |------|---------|
 | `src/config_parser.cpp` & `include/config_parser.h` | Load YAML files (e.g. `config/ekf_real.yml`) into a `config_parser::Config`, which lists models, sensors, and the main model. |
 | `config/` | YAML configurations describing the models and sensors to instantiate. |
 
-### ROS Sensor Adapters
+### ROS Sensor Implementation
 | File | Purpose |
 |------|---------|
 | `include/std_ros_sensors.h` & `src/std_ros_sensors.cpp` | ROS sensor adapters that translate ROS messages (`sensor_msgs::msg::Imu`, `cev_msgs::msg::SensorCollect`, etc.) into `StatePackage` updates and feed them into the EKF models. |
@@ -54,4 +54,4 @@ This layer has the ROS nodes, parameters, config parsing, and sensor/model insta
 ### Node Entry Point
 | File | Purpose |
 |------|---------|
-| `src/localization.cpp` | The `LocalizationNode` class. It: <br>• Parses configuration parameters. <br>• Instantiates EKF models (`init_update_models`). <br>• Creates sensor adapters/subscriptions (`init_sensors`). <br>• Connects sensors to models via the configuration’s `estimator_models` bindings. <br>• Publishes the new odometry (`publish_odometry`) and optional TF transforms. |
+| `src/localization.cpp` | The main ROS node. It: <br>• Loads the YAML config (`ConfigParser::load`) and instantiates the models. <br>• Creates optional odometry/TF publishers. <br>• Builds ROS sensor adapters (`IMUSensor`, `RawSensor`, …), binds them to their target models, and subscribes to the specified topics. <br>• Connects incoming messages to the EKF `sensor->msg_handler` and publishes via `publish_model`. |
